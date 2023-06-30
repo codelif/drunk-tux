@@ -108,7 +108,7 @@ def caffeine(event: Event, time_seconds: float):
     set_mode(conf, "suspend")
 
 
-def clean_thread(running_list: list[dict[str, Thread or float]]):
+def clean_thread(running_list: list[dict]):
     new_list = []
     for thread in running_list:
         if thread["thread"].is_alive():
