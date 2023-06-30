@@ -3,8 +3,14 @@ from multiprocessing.context import AuthenticationError
 import getpass
 import os
 import readline
+import sys
 
 MAX_RETRIES = 3
+CAFF_ON = "󰅶"
+CAFF_OFF = "󰛊"
+
+fancy = not ("--ascii" in sys.argv or "-a" in sys.argv)
+
 address = ("localhost", 6000)
 
 tries = 0
@@ -24,7 +30,16 @@ while tries <= MAX_RETRIES:
 else:
     print("You have exceeded the number of retries. (%s)" % MAX_RETRIES)
 while connected:
-    print("> ", end="")
+    if fancy:
+        icon = CAFF_OFF
+        conn.send("current")
+        current = conn.recv()
+        if current == "ignore":
+            icon = CAFF_ON
+    else:
+        icon = ">"
+
+    print("%s " % icon, end="")
     try:
         cmd = input()
     except KeyboardInterrupt:
