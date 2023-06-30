@@ -98,10 +98,11 @@ def set_mode(conf: Parser, mode: str):
     subprocess.run(["systemctl", "kill", "-s", "HUP", LOGIND_SRV])
 
 
-def caffeine(event: Event, time_seconds: float):
+def caffeine(event: Event, time_seconds: float, gil_lock: Event):
     conf = get_parser()
     set_mode(conf, "ignore")
-
+    
+    gil_lock.set()
     event.wait(time_seconds)
 
     conf = get_parser()  # Just in case, it has been modified.
@@ -178,12 +179,14 @@ while running:
             if duration > 86400:
                 conn.send("Duration cannot be greater than 1 day")
                 continue
+            gil_lock = Event()
             event = Event()
-            t = Thread(target=caffeine, args=(event, duration))
+            t = Thread(target=caffeine, args=(event, duration, gil_lock))
             t.start()
             running_threads.append(
                 {"thread": t, "event": event, "time": time.time(), "duration": duration}
             )
+            gil_lock.wait(1)
 
             conn.send("Drinking Coffee for %s" % prettify_seconds(duration))
 
@@ -208,6 +211,7 @@ while running:
                 continue
 
             running_threads[0]["event"].set()
+            running_threads[0]["thread"].join()
             conn.send("Spilled the coffee.")
         else:
             conn.send("The server does not recogize the command '%s'" % msg)
